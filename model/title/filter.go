@@ -1,7 +1,7 @@
 package title
 
 // Filter is a generic filter interface
-type Filter interface {}
+type Filter interface{}
 
 // OnServiceFilter checks if the title is on the specified service e.g. Netflix
 // if service is an empty string, it has no effect
