@@ -49,7 +49,7 @@ func (a *API) PostTitleHandler(w http.ResponseWriter, req *http.Request) {
 	t, err := a.Storage.AddTitle(title)
 	if err != nil {
 		log.Printf("ERROR: failed to add title to storage: %s", err)
-		http.Error(w, "failed to add title to storage", http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("failed to add title to storage: %s", err), http.StatusInternalServerError)
 		return
 	}
 
@@ -60,8 +60,8 @@ func (a *API) PostTitleHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, string(bytes))
 	w.WriteHeader(http.StatusCreated)
+	fmt.Fprintf(w, string(bytes))
 }
 
 // RandomTitleHandler handles requests for a random title
