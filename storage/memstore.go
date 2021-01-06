@@ -35,7 +35,8 @@ func (*Config) NewMemStore() (Storage, error) {
 // Populate initializes the storage with some dummy data for testing purposes
 func (m *MemStore) Populate() {
 	m.titles = map[string]*title.Title{
-		"test1": {
+		"tt0831387": {
+			ID:          "tt0831387",
 			Name:        "Godzilla",
 			Description: "The world is beset by the appearance of monstrous creatures, but one of them may be the only one who can save humanity.",
 			Genres: []string{
@@ -56,7 +57,8 @@ func (m *MemStore) Populate() {
 				},
 			},
 		},
-		"test2": {
+		"tt4633694": {
+			ID:          "tt4633694",
 			Name:        "Spider-Man: Into the Spider-Verse",
 			Description: "Teen Miles Morales becomes the Spider-Man of his universe, and must join with five spider-powered individuals from other dimensions to stop a threat for all realities.",
 			Genres: []string{
@@ -77,7 +79,8 @@ func (m *MemStore) Populate() {
 				},
 			},
 		},
-		"test3": {
+		"tt10618286": {
+			ID:          "tt10618286",
 			Name:        "Mank",
 			Description: "1930's Hollywood is reevaluated through the eyes of scathing social critic and alcoholic screenwriter Herman J. Mankiewicz as he races to finish the screenplay of Citizen Kane (1941).",
 			Genres: []string{
@@ -93,6 +96,19 @@ func (m *MemStore) Populate() {
 			},
 		},
 	}
+}
+
+// AddTitle adds the title to storage
+func (m *MemStore) AddTitle(t title.Title) (*title.Title, error) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
+	if m.titles[t.ID] != nil {
+		return nil, fmt.Errorf("title already exists with id: '%s'", t.ID)
+	}
+
+	m.titles[t.ID] = &t
+	return m.titles[t.ID], nil
 }
 
 // RandomTitle chooese a random title from storage (filtered by the filters)

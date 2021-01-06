@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -24,6 +25,43 @@ type scoreQuery struct {
 	kind string
 	min  int
 	max  int
+}
+
+// PostTitleHandler handles requests posting a new title
+func (a *API) PostTitleHandler(w http.ResponseWriter, req *http.Request) {
+	defer req.Body.Close()
+
+	body, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		log.Printf("ERROR: could not read request body: %s", err)
+		http.Error(w, "could not read request body", http.StatusBadRequest)
+		return
+	}
+
+	var title title.Title
+	err = json.Unmarshal(body, &title)
+	if err != nil {
+		log.Printf("ERROR: could not parse body to title: %s", err)
+		http.Error(w, "invalid body", http.StatusBadRequest)
+		return
+	}
+
+	t, err := a.Storage.AddTitle(title)
+	if err != nil {
+		log.Printf("ERROR: failed to add title to storage: %s", err)
+		http.Error(w, "failed to add title to storage", http.StatusInternalServerError)
+		return
+	}
+
+	bytes, err := json.Marshal(t)
+	if err != nil {
+		log.Printf("ERROR: could not serialise title: %s", err)
+		http.Error(w, "could not serialise title", http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprintf(w, string(bytes))
+	w.WriteHeader(http.StatusCreated)
 }
 
 // RandomTitleHandler handles requests for a random title
