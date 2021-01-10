@@ -29,7 +29,7 @@ func (*Config) NewMemStore() (Storage, error) {
 }
 
 // AddTitle adds the title to storage
-func (m *MemStore) AddTitle(t title.Title) (*title.Title, error) {
+func (m *MemStore) AddTitle(t *title.Title) (*title.Title, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
@@ -37,8 +37,29 @@ func (m *MemStore) AddTitle(t title.Title) (*title.Title, error) {
 		return nil, fmt.Errorf("title already exists with id: '%s'", t.ID)
 	}
 
-	m.titles[t.ID] = &t
+	m.titles[t.ID] = t
 	return m.titles[t.ID], nil
+}
+
+// UpdateTitle replaces the title in storage
+func (m *MemStore) UpdateTitle(t *title.Title) (*title.Title, error) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
+	if m.titles[t.ID] == nil {
+		return nil, fmt.Errorf("title does not exist with id: '%s'", t.ID)
+	}
+
+	m.titles[t.ID] = t
+	return m.titles[t.ID], nil
+}
+
+// GetTitle retrieves a title from storage by id
+func (m *MemStore) GetTitle(id string) (*title.Title, error) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
+	return m.titles[id], nil
 }
 
 // RandomTitle chooese a random title from storage (filtered by the filters)
