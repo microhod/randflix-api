@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	defaultScoreKind = "metacritic"
+	defaultScoreKind = "metascore"
 )
 
 type titleQuery struct {

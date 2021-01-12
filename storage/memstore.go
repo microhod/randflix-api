@@ -70,10 +70,10 @@ func (m *MemStore) RandomTitle(filters ...title.Filter) (*title.Title, error) {
 	var msFilters []memStoreFilter
 
 	for _, tf := range filters {
-		if c, err := parseFilter(tf); err != nil {
+		if f, err := parseFilter(tf); err != nil {
 			return nil, fmt.Errorf("Error parsing filter: %s", err)
 		} else {
-			msFilters = append(msFilters, c)
+			msFilters = append(msFilters, f)
 		}
 	}
 
