@@ -5,6 +5,7 @@ import (
 	"math"
 	"math/rand"
 	"reflect"
+	"sort"
 	"strings"
 	"sync"
 
@@ -26,6 +27,29 @@ func (*Config) NewMemStore() (Storage, error) {
 	}
 
 	return s, nil
+}
+
+// ListTitles retrieves all titles from storage, given the pageSize and page
+// note: page is zero indexed
+func (m *MemStore) ListTitles(pageSize int, page int) ([]*title.Title, error) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
+	titles := []*title.Title{}
+
+	for _, t := range m.titles {
+		titles = append(titles, t)
+	}
+
+	// order by 'highest' ID first
+	sort.Slice(titles, func (i, j int) bool {
+		return titles[i].ID > titles[j].ID
+	})
+
+	start := min(page * pageSize, len(titles))
+	end   := min((page + 1) * pageSize, len(titles))
+
+	return titles[start:end], nil
 }
 
 // AddTitle adds the title to storage
@@ -90,6 +114,13 @@ func (m *MemStore) RandomTitle(filters ...title.Filter) (*title.Title, error) {
 	}
 
 	return list[rand.Intn(len(list))], nil
+}
+
+func min(a, b int) int {
+	if a <= b {
+		return a
+	}
+	return b
 }
 
 func passes(t *title.Title, filters []memStoreFilter) bool {

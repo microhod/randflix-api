@@ -16,8 +16,10 @@ type Storage interface {
 	AddTitle(t *title.Title) (*title.Title, error)
 	// UpdateTitle replaces a title in storage
 	UpdateTitle(t *title.Title) (*title.Title, error)
-	// GetTitle retrieces a title from storage by id
+	// GetTitle retrieves a title from storage by id
 	GetTitle(id string) (*title.Title, error)
+	// ListTitles retrieves all titles from storage
+	ListTitles(pageSize int, page int) ([]*title.Title, error)
 }
 
 // Config encapsulates config.StorageConfig, so that we can define methods on it in this package

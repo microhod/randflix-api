@@ -59,6 +59,7 @@ func (a *API) RandomTitleHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	addDefaultResponseHeaders(w)
 	fmt.Fprint(w, string(bytes))
 	return
 }
