@@ -5,6 +5,7 @@ import (
 	"math"
 	"math/rand"
 	"reflect"
+	"sort"
 	"strings"
 	"sync"
 
@@ -25,74 +26,64 @@ func (*Config) NewMemStore() (Storage, error) {
 		titles: map[string]*title.Title{},
 	}
 
-	// Useful for debugging
-	// TODO: replace this with a better idea
-	s.Populate()
-
 	return s, nil
 }
 
-// Populate initializes the storage with some dummy data for testing purposes
-func (m *MemStore) Populate() {
-	m.titles = map[string]*title.Title{
-		"test1": {
-			Name:        "Godzilla",
-			Description: "The world is beset by the appearance of monstrous creatures, but one of them may be the only one who can save humanity.",
-			Genres: []string{
-				"action", "adventure", "sci-fi",
-			},
-			Scores: map[string]int{
-				"metacritic": 62,
-			},
-			Poster: "https://m.media-amazon.com/images/M/MV5BN2E4ZDgxN2YtZjExMS00MWE5LTg3NjQtNTkxMzJhOTA3MDQ4XkEyXkFqcGdeQXVyMTQxNzMzNDI@.png",
-			Directories: map[string]*title.Directory{
-				"imdb": {
-					URL: "https://imdb.com/title/tt0831387",
-				},
-			},
-			Services: map[string]*title.Service{
-				"netflix": {
-					URL: "https://netflix.com/watch/11819467",
-				},
-			},
-		},
-		"test2": {
-			Name:        "Spider-Man: Into the Spider-Verse",
-			Description: "Teen Miles Morales becomes the Spider-Man of his universe, and must join with five spider-powered individuals from other dimensions to stop a threat for all realities.",
-			Genres: []string{
-				"action", "adventure", "animation",
-			},
-			Scores: map[string]int{
-				"metacritic": 87,
-			},
-			Poster: "https://m.media-amazon.com/images/M/MV5BMjMwNDkxMTgzOF5BMl5BanBnXkFtZTgwNTkwNTQ3NjM@.png",
-			Directories: map[string]*title.Directory{
-				"imdb": {
-					URL: "https://imdb.com/title/tt4633694",
-				},
-			},
-			Services: map[string]*title.Service{
-				"prime": {
-					URL: "https://www.amazon.co.uk/gp/video/detail/amzn1.dv.gti.b2b3cd4f-7b33-5301-03d7-10160df79fbd",
-				},
-			},
-		},
-		"test3": {
-			Name:        "Mank",
-			Description: "1930's Hollywood is reevaluated through the eyes of scathing social critic and alcoholic screenwriter Herman J. Mankiewicz as he races to finish the screenplay of Citizen Kane (1941).",
-			Genres: []string{
-				"biography", "comedy", "drama",
-			},
-			Scores: map[string]int{
-				"metacritic": 79,
-			},
-			Directories: map[string]*title.Directory{
-				"imdb": {
-					URL: "https://imdb.com/title/tt10618286",
-				},
-			},
-		},
+// ListTitles retrieves all titles from storage, given the pageSize and page
+// note: page is zero indexed
+func (m *MemStore) ListTitles(pageSize int, page int) ([]*title.Title, error) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
+	titles := []*title.Title{}
+
+	for _, t := range m.titles {
+		titles = append(titles, t)
 	}
+
+	// order by 'highest' ID first
+	sort.Slice(titles, func(i, j int) bool {
+		return titles[i].ID > titles[j].ID
+	})
+
+	start := min(page*pageSize, len(titles))
+	end := min((page+1)*pageSize, len(titles))
+
+	return titles[start:end], nil
+}
+
+// AddTitle adds the title to storage
+func (m *MemStore) AddTitle(t *title.Title) (*title.Title, error) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
+	if m.titles[t.ID] != nil {
+		return nil, fmt.Errorf("title already exists with id: '%s'", t.ID)
+	}
+
+	m.titles[t.ID] = t
+	return m.titles[t.ID], nil
+}
+
+// UpdateTitle replaces the title in storage
+func (m *MemStore) UpdateTitle(t *title.Title) (*title.Title, error) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
+	if m.titles[t.ID] == nil {
+		return nil, fmt.Errorf("title does not exist with id: '%s'", t.ID)
+	}
+
+	m.titles[t.ID] = t
+	return m.titles[t.ID], nil
+}
+
+// GetTitle retrieves a title from storage by id
+func (m *MemStore) GetTitle(id string) (*title.Title, error) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
+	return m.titles[id], nil
 }
 
 // RandomTitle chooese a random title from storage (filtered by the filters)
@@ -103,10 +94,10 @@ func (m *MemStore) RandomTitle(filters ...title.Filter) (*title.Title, error) {
 	var msFilters []memStoreFilter
 
 	for _, tf := range filters {
-		if c, err := parseFilter(tf); err != nil {
+		if f, err := parseFilter(tf); err != nil {
 			return nil, fmt.Errorf("Error parsing filter: %s", err)
 		} else {
-			msFilters = append(msFilters, c)
+			msFilters = append(msFilters, f)
 		}
 	}
 
@@ -123,6 +114,13 @@ func (m *MemStore) RandomTitle(filters ...title.Filter) (*title.Title, error) {
 	}
 
 	return list[rand.Intn(len(list))], nil
+}
+
+func min(a, b int) int {
+	if a <= b {
+		return a
+	}
+	return b
 }
 
 func passes(t *title.Title, filters []memStoreFilter) bool {

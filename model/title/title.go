@@ -2,7 +2,9 @@ package title
 
 // Title describes an object representing a piece of entertainment e.g. Movie or a TV Show
 type Title struct {
+	ID          string                `json:"id"`
 	Name        string                `json:"name"`
+	Year        int                   `json:"year"`
 	Description string                `json:"description"`
 	Genres      []string              `json:"genres"`
 	Scores      map[string]int        `json:"scores"`

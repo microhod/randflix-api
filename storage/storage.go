@@ -12,6 +12,14 @@ import (
 type Storage interface {
 	// RandomTitle gets a random title from storage
 	RandomTitle(filters ...title.Filter) (*title.Title, error)
+	// AddTitle adds a title to storage
+	AddTitle(t *title.Title) (*title.Title, error)
+	// UpdateTitle replaces a title in storage
+	UpdateTitle(t *title.Title) (*title.Title, error)
+	// GetTitle retrieves a title from storage by id
+	GetTitle(id string) (*title.Title, error)
+	// ListTitles retrieves all titles from storage
+	ListTitles(pageSize int, page int) ([]*title.Title, error)
 }
 
 // Config encapsulates config.StorageConfig, so that we can define methods on it in this package

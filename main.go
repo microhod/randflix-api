@@ -27,6 +27,12 @@ func main() {
 	r.HandleFunc("/title/random", a.RandomTitleHandler).
 		Methods(http.MethodGet).
 		Schemes("http")
+	r.HandleFunc("/title", a.TitleHandler).
+		Methods(http.MethodPost, http.MethodGet).
+		Schemes("http")
+	r.HandleFunc("/title/{id}", a.TitleHandler).
+		Methods(http.MethodGet, http.MethodPut).
+		Schemes("http")
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},
