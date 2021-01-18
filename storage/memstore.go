@@ -42,12 +42,12 @@ func (m *MemStore) ListTitles(pageSize int, page int) ([]*title.Title, error) {
 	}
 
 	// order by 'highest' ID first
-	sort.Slice(titles, func (i, j int) bool {
+	sort.Slice(titles, func(i, j int) bool {
 		return titles[i].ID > titles[j].ID
 	})
 
-	start := min(page * pageSize, len(titles))
-	end   := min((page + 1) * pageSize, len(titles))
+	start := min(page*pageSize, len(titles))
+	end := min((page+1)*pageSize, len(titles))
 
 	return titles[start:end], nil
 }
