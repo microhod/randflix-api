@@ -24,21 +24,21 @@ type Storage interface {
 
 // Config encapsulates config.StorageConfig, so that we can define methods on it in this package
 type Config struct {
-	config.StorageConfig
+	config.Config
 }
 
 // CreateStorage is a factory method to create storage of any type, based on the config
 func CreateStorage(config *config.Config) (Storage, error) {
 
 	// Convert to local Config struct
-	c := &Config{*config.Storage}
+	c := &Config{*config}
 
 	// Constructors should have the form 'New<StorageKind>'
-	name := fmt.Sprintf("New%s", c.Kind)
+	name := fmt.Sprintf("New%s", c.StorageKind)
 	f := reflect.ValueOf(c).MethodByName(name)
 
 	if !f.IsValid() {
-		return nil, fmt.Errorf("Storage kind not supported: %s", c.Kind)
+		return nil, fmt.Errorf("Storage kind not supported: %s", c.StorageKind)
 	}
 
 	v := f.Call(nil)

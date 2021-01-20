@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 
@@ -14,11 +13,14 @@ import (
 
 func main() {
 
-	cfg := config.GetConfig()
+	cfg, err := config.GetConfig()
+	if err != nil {
+		log.Fatalf("failed to get config: %s", err)
+	}
 
 	store, err := storage.CreateStorage(cfg)
 	if err != nil {
-		log.Panic(fmt.Errorf("Failed to create storage: %s", err))
+		log.Fatalf("Failed to create storage: %s", err)
 	}
 
 	a := api.API{Storage: store}
