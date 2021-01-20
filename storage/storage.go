@@ -2,14 +2,19 @@ package storage
 
 import (
 	"fmt"
+	"log"
 	"reflect"
+	"strings"
 
+	"github.com/kelseyhightower/envconfig"
 	"github.com/microhod/randflix-api/config"
 	"github.com/microhod/randflix-api/model/title"
 )
 
 // Storage provides storage functions for the api
 type Storage interface {
+	// Disconnect disconnects from the storage
+	Disconnect()
 	// RandomTitle gets a random title from storage
 	RandomTitle(filters ...title.Filter) (*title.Title, error)
 	// AddTitle adds a title to storage
@@ -38,24 +43,34 @@ func CreateStorage(config *config.Config) (Storage, error) {
 	f := reflect.ValueOf(c).MethodByName(name)
 
 	if !f.IsValid() {
-		return nil, fmt.Errorf("Storage kind not supported: %s", c.StorageKind)
+		return nil, fmt.Errorf("Storage kind not supported: '%s'", c.StorageKind)
 	}
 
+	log.Printf("(storage): creating storage of type: %s", c.StorageKind)
 	v := f.Call(nil)
 
 	if len(v) != 2 {
-		return nil, fmt.Errorf("Expected 2 return values from method %s, got: %d", name, len(v))
+		return nil, fmt.Errorf("Expected 2 return values from method '%s', got: %d", name, len(v))
 	}
 
 	s, ok := v[0].Interface().(Storage)
-	if !ok {
-		return nil, fmt.Errorf("Expected 1st return value to be *Storage from method %s, got: %s", name, reflect.TypeOf(v[0].Interface()))
+	if !(ok || v[0].IsNil()) {
+		return nil, fmt.Errorf("Expected 1st return value to be *Storage from method '%s', got: '%s'", name, reflect.TypeOf(v[0].Interface()))
 	}
 
 	err, ok := v[1].Interface().(error)
 	if !(ok || v[1].IsNil()) {
-		return nil, fmt.Errorf("Expected 2nd return value to be error from method %s, got: %s", name, reflect.TypeOf(v[0].Interface()))
+		return nil, fmt.Errorf("Expected 2nd return value to be error from method '%s', got: '%s'", name, reflect.TypeOf(v[0].Interface()))
 	}
 
 	return s, err
+}
+
+// ProcessStorageConfig parses environment variables to a particular storage config interface
+// we use the prefix <appname>_<storagekind> e.g. RANDFLIX_MONGOSTORE
+// storageConfig must be a pointer to a struct
+func (c *Config) ProcessStorageConfig(storageConfig interface{}) error {
+
+	prefix := fmt.Sprintf("%s_%s", config.AppName, strings.ToUpper(c.StorageKind))
+	return envconfig.Process(prefix, storageConfig)
 }

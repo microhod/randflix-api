@@ -29,6 +29,9 @@ func (*Config) NewMemStore() (Storage, error) {
 	return s, nil
 }
 
+// Disconnect disconnects from storage (in this case it does nothing)
+func (m *MemStore) Disconnect() {}
+
 // ListTitles retrieves all titles from storage, given the pageSize and page
 // note: page is zero indexed
 func (m *MemStore) ListTitles(pageSize int, page int) ([]*title.Title, error) {

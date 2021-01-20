@@ -22,6 +22,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create storage: %s", err)
 	}
+	defer store.Disconnect()
 
 	a := api.API{Storage: store}
 

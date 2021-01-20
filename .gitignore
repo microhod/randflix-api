@@ -1,6 +1,9 @@
 # output of go build
 randflix-api
 
+# local .env file
+.env
+
 # Binaries for programs and plugins
 *.exe
 *.exe~

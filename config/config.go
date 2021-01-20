@@ -7,13 +7,13 @@ import (
 )
 
 const (
-	appName = "RANDFLIXAPI"
+	// AppName is the name of the app to be used as prefix of environment variables
+	AppName = "RANDFLIXAPI"
 )
 
 // Config describes the api configuration
 type Config struct {
-	StorageKind   string            `default:"MemStore"`
-	StorageConfig map[string]string `default:""`
+	StorageKind string `default:"MemStore"`
 }
 
 func (c *Config) String() string {
@@ -24,7 +24,7 @@ func (c *Config) String() string {
 // GetConfig returns the current config from environment variables
 func GetConfig() (*Config, error) {
 	var c Config
-	err := envconfig.Process(appName, &c)
+	err := envconfig.Process(AppName, &c)
 	if err != nil {
 		return nil, err
 	}
