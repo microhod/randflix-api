@@ -121,7 +121,7 @@ func (a *API) createTitle(w http.ResponseWriter, req *http.Request) {
 	t, err := a.Storage.GetTitle(title.ID)
 	if err != nil {
 		log.Printf("ERROR: failed to get title from storage: %s", err)
-		http.Error(w, fmt.Sprintf("failed to get title to storage: %s", err), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("failed to get title from storage: %s", err), http.StatusInternalServerError)
 		return
 	}
 	if t != nil {
