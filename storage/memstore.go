@@ -97,7 +97,7 @@ func (m *MemStore) RandomTitle(filters ...title.Filter) (*title.Title, error) {
 	var msFilters []memStoreFilter
 
 	for _, tf := range filters {
-		if f, err := parseFilter(tf); err != nil {
+		if f, err := m.parseFilter(tf); err != nil {
 			return nil, fmt.Errorf("Error parsing filter: %s", err)
 		} else {
 			msFilters = append(msFilters, f)
@@ -107,7 +107,7 @@ func (m *MemStore) RandomTitle(filters ...title.Filter) (*title.Title, error) {
 	list := []*title.Title{}
 
 	for _, t := range m.titles {
-		if passes(t, msFilters) {
+		if m.passes(t, msFilters) {
 			list = append(list, t)
 		}
 	}
@@ -119,14 +119,7 @@ func (m *MemStore) RandomTitle(filters ...title.Filter) (*title.Title, error) {
 	return list[rand.Intn(len(list))], nil
 }
 
-func min(a, b int) int {
-	if a <= b {
-		return a
-	}
-	return b
-}
-
-func passes(t *title.Title, filters []memStoreFilter) bool {
+func (m *MemStore) passes(t *title.Title, filters []memStoreFilter) bool {
 	for _, filter := range filters {
 		if !filter(t) {
 			return false
@@ -135,17 +128,17 @@ func passes(t *title.Title, filters []memStoreFilter) bool {
 	return true
 }
 
-func parseFilter(tf title.Filter) (memStoreFilter, error) {
+func (m *MemStore) parseFilter(tf title.Filter) (memStoreFilter, error) {
 	var filter memStoreFilter
 
 	switch tf.(type) {
 	case title.OnServiceFilter:
-		filter = onService(tf.(title.OnServiceFilter).Service)
+		filter = m.onService(tf.(title.OnServiceFilter).Service)
 	case title.IsGenreFilter:
-		filter = isGenre(tf.(title.IsGenreFilter).Genres...)
+		filter = m.isGenre(tf.(title.IsGenreFilter).Genres...)
 	case title.ScoreBetweenFilter:
 		f := tf.(title.ScoreBetweenFilter)
-		filter = scoreBetween(f.Kind, f.Min, f.Max)
+		filter = m.scoreBetween(f.Kind, f.Min, f.Max)
 	default:
 		return nil, fmt.Errorf("Unsupported title filter type: %s", reflect.TypeOf(tf))
 	}
@@ -153,16 +146,16 @@ func parseFilter(tf title.Filter) (memStoreFilter, error) {
 	return filter, nil
 }
 
-func onService(name string) memStoreFilter {
+func (m *MemStore) onService(name string) memStoreFilter {
 	if name == "" {
-		return truefilter
+		return m.truefilter
 	}
 	return func(t *title.Title) bool {
 		return t != nil && t.Services != nil && t.Services[name] != nil && t.Services[name].URL != ""
 	}
 }
 
-func isGenre(names ...string) memStoreFilter {
+func (m *MemStore) isGenre(names ...string) memStoreFilter {
 	return func(t *title.Title) bool {
 		for _, n := range names {
 			if !containsCaseInsensitive(t.Genres, n) {
@@ -173,9 +166,9 @@ func isGenre(names ...string) memStoreFilter {
 	}
 }
 
-func scoreBetween(kind string, min int, max int) memStoreFilter {
+func (m *MemStore) scoreBetween(kind string, min int, max int) memStoreFilter {
 	if kind == "" {
-		return truefilter
+		return m.truefilter
 	}
 	if max == 0 {
 		max = math.MaxInt64
@@ -186,8 +179,15 @@ func scoreBetween(kind string, min int, max int) memStoreFilter {
 	}
 }
 
-func truefilter(*title.Title) bool {
+func (m *MemStore) truefilter(*title.Title) bool {
 	return true
+}
+
+func min(a, b int) int {
+	if a <= b {
+		return a
+	}
+	return b
 }
 
 func containsCaseInsensitive(items []string, term string) bool {

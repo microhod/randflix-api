@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math"
+	"reflect"
 	"time"
 
 	"github.com/gobeam/mongo-go-pagination"
@@ -86,24 +88,37 @@ func (m *MongoStore) Disconnect() {
 	}
 }
 
-func (m *MongoStore) RandomTitle(filters ...title.Filter) (*title.Title, error) {
+// RandomTitle picks a random title based on the filters passed in
+func (m *MongoStore) RandomTitle(titleFilters ...title.Filter) (*title.Title, error) {
 
-	// TODO: add filter support
+	filters, err := m.parseFilters(titleFilters...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse filters: %s", err)
+	}
 
-	// $sample handles random sampling for us
-	sampleOne := []bson.D{bson.D{{"$sample", bson.D{{"size", 1}}}}}
+	sampleOne := mongo.Pipeline{
+		{
+			{Key: "$match", Value: filters},
+		},
+		{
+			// $sample handles random sampling for us
+			{Key: "$sample", Value: bson.D{
+				{Key: "size", Value: 1},
+			}},
+		},
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), m.config.OperationTimeout)
 	defer cancel()
 
 	cursor, err := m.titles.Aggregate(ctx, sampleOne)
-	if err != nil && !errors.Is(err, mongo.ErrNoDocuments){
-		return nil, fmt.Errorf("failed to sample: %s", nil)
+	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
+		return nil, fmt.Errorf("failed to sample: %s", err)
 	}
 
 	var rawDocuments []bson.Raw
 	if err = cursor.All(ctx, &rawDocuments); err != nil {
-		return nil, fmt.Errorf("failed to read cursor from sample aggregation")
+		return nil, fmt.Errorf("failed to read cursor from sample aggregation: %s", err)
 	}
 
 	if len(rawDocuments) == 0 {
@@ -118,15 +133,17 @@ func (m *MongoStore) RandomTitle(filters ...title.Filter) (*title.Title, error) 
 	return title, nil
 }
 
+// AddTitle adds the title passed in
 func (m *MongoStore) AddTitle(t *title.Title) (*title.Title, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), m.config.OperationTimeout)
 	defer cancel()
 
 	_, err := m.titles.InsertOne(ctx, t)
-	
+
 	return t, err
 }
 
+// UpdateTitle updates the title passed in
 func (m *MongoStore) UpdateTitle(t *title.Title) (*title.Title, error) {
 	filter := bson.M{"_id": t.ID}
 
@@ -138,6 +155,7 @@ func (m *MongoStore) UpdateTitle(t *title.Title) (*title.Title, error) {
 	return t, err
 }
 
+// GetTitle gets a single title by id, if it doesn't exist, it returns nil
 func (m *MongoStore) GetTitle(id string) (*title.Title, error) {
 	filter := bson.M{"_id": id}
 
@@ -146,15 +164,16 @@ func (m *MongoStore) GetTitle(id string) (*title.Title, error) {
 
 	var title *title.Title
 	err := m.titles.FindOne(ctx, filter).Decode(&title)
-	
+
 	// we don't want to return an error if the title was not found
 	if errors.Is(err, mongo.ErrNoDocuments) {
-		err = nil
+		return nil, nil
 	}
 
 	return title, err
 }
 
+// ListTitles lists all elements in the mongo store, by page and pageSize
 func (m *MongoStore) ListTitles(pageSize int, page int) ([]*title.Title, error) {
 
 	// empty filter
@@ -168,7 +187,7 @@ func (m *MongoStore) ListTitles(pageSize int, page int) ([]*title.Title, error) 
 	titles := []*title.Title{}
 	for _, raw := range data.Data {
 		var title *title.Title
-		
+
 		if bson.Unmarshal(raw, &title); err != nil {
 			return nil, fmt.Errorf("failed to unmarshall bson to title: %s", err)
 		}
@@ -177,4 +196,83 @@ func (m *MongoStore) ListTitles(pageSize int, page int) ([]*title.Title, error) 
 	}
 
 	return titles, nil
+}
+
+func (m *MongoStore) parseFilters(titleFilters ...title.Filter) ([]bson.E, error) {
+
+	filters := []bson.E{}
+
+	for _, tf := range titleFilters {
+		f, err := m.parseFilter(tf)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse filter: %s", err)
+		}
+
+		filters = append(filters, f)
+	}
+
+	return filters, nil
+}
+
+func (m *MongoStore) parseFilter(tf title.Filter) (bson.E, error) {
+
+	var filter bson.E
+
+	switch tf.(type) {
+	case title.OnServiceFilter:
+		filter = m.onService(tf.(title.OnServiceFilter).Service)
+	case title.IsGenreFilter:
+		filter = m.isGenre(tf.(title.IsGenreFilter).Genres...)
+	case title.ScoreBetweenFilter:
+		f := tf.(title.ScoreBetweenFilter)
+		filter = m.scoreBetween(f.Kind, f.Min, f.Max)
+	default:
+		return bson.E{}, fmt.Errorf("unsupported title filter type: %s", reflect.TypeOf(tf))
+	}
+
+	return filter, nil
+}
+
+func (m *MongoStore) onService(name string) bson.E {
+	if name == "" {
+		return m.emptyFilter()
+	}
+
+	serviceID := fmt.Sprintf("services.%s.id", name)
+
+	return bson.E{Key: serviceID, Value: bson.D{
+		{Key: "$exists", Value: true},
+	}}
+}
+
+func (m *MongoStore) isGenre(names ...string) bson.E {
+
+	if names == nil {
+		return m.emptyFilter()
+	}
+
+	return bson.E{Key: "genres", Value: bson.D{
+		{Key: "$all", Value: names},
+	}}
+}
+
+func (m *MongoStore) scoreBetween(kind string, min int, max int) bson.E {
+
+	if kind == "" {
+		return m.emptyFilter()
+	}
+	if max == 0 {
+		max = math.MaxInt64
+	}
+
+	score := fmt.Sprintf("scores.%s", kind)
+
+	return bson.E{Key: score, Value: bson.D{
+		{Key: "$gte", Value: min},
+		{Key: "$lte", Value: max},
+	}}
+}
+
+func (m *MongoStore) emptyFilter() bson.E {
+	return bson.E{}
 }
