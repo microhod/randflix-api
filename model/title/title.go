@@ -15,12 +15,14 @@ type Title struct {
 
 // Directory is a reference to a title in an external store such as IMDB
 type Directory struct {
+	ID             string            `json:"id"`
 	URL            string            `json:"url"`
 	AdditionalInfo map[string]string `json:"additionalInfo"`
 }
 
 // Service is a reference to a title in an external streming service such as Netflix
 type Service struct {
+	ID             string            `json:"id"`
 	URL            string            `json:"url"`
 	AdditionalInfo map[string]string `json:"additionalInfo"`
 }
