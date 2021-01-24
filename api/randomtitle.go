@@ -76,7 +76,7 @@ func parseTitleQuery(query map[string][]string) (*titleQuery, error) {
 	}
 
 	// Genres
-	tq.genres, _ = query["genres"]
+	tq.genres, _ = query["genre"]
 
 	// Score
 	keys, ok = query["score_kind"]
