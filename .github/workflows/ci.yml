@@ -97,7 +97,7 @@ jobs:
       uses: docker/build-push-action@v2.2.1
       with:
         file: ./cmd/lambda/Dockerfile
-        tags: "${{ steps.login-ecr.outputs.registry }}/random-api:dev"
+        tags: "${{ steps.login-ecr.outputs.registry }}/randflix-random-api:dev"
 
     - name: Build and Publish Lambda
       # only publish image on main
@@ -105,5 +105,5 @@ jobs:
       uses: docker/build-push-action@v2.2.1
       with:
         file: ./cmd/http/Dockerfile
-        tags: "${{ steps.login-ecr.outputs.registry }}/random-api:latest"
+        tags: "${{ steps.login-ecr.outputs.registry }}/randflix-random-api:latest"
         push: true
