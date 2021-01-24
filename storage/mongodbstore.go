@@ -7,6 +7,7 @@ import (
 	"log"
 	"math"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/gobeam/mongo-go-pagination"
@@ -27,7 +28,7 @@ const (
 type MongoStore struct {
 	client *mongo.Client
 	titles *mongo.Collection
-	config mongoConfig
+	config *mongoConfig
 }
 
 type mongoConfig struct {
@@ -35,22 +36,25 @@ type mongoConfig struct {
 	Database         string        `default:"randflix"`
 	Collection       string        `default:"titles"`
 	OperationTimeout time.Duration `default:"10s"`
+	Server           string
 }
 
 // NewMongoStore creates a new mongodb client, based on the config passed in
 func (c *Config) NewMongoStore() (Storage, error) {
 
-	var mc mongoConfig
-	err := c.ProcessStorageConfig(&mc)
+	var mConfig mongoConfig
+	err := c.ProcessStorageConfig(&mConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load mongo config: %s", err)
 	}
+	mc := &mConfig
+	mc.parseServer()
 
 	client, err := mc.connect()
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to mongodb: %s", err)
 	}
-	log.Printf("(storage): initiated connection to mongodb: %s", mc.URI)
+	log.Printf("(storage): initiated connection to mongodb: %s", mc.Server)
 
 	db := client.Database(mc.Database)
 	collection := db.Collection(mc.Collection)
@@ -62,17 +66,35 @@ func (c *Config) NewMongoStore() (Storage, error) {
 	}, nil
 }
 
-func (mc mongoConfig) connect() (*mongo.Client, error) {
+// parse server from URI (the 'server' will be what we use for logging)
+func (mc *mongoConfig) parseServer() {
+	// remove authanctication part (if exists)
+	parts := strings.Split(mc.URI, "@")
+
+	var noAuth string
+	if len(parts) == 1 {
+		noAuth = parts[0]
+	} else {
+		noAuth = parts[1]
+	}
+
+	// remove any query params
+	mc.Server = strings.Split(noAuth, "?")[0]
+}
+
+func (mc *mongoConfig) connect() (*mongo.Client, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), mc.OperationTimeout)
 	defer cancel()
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(mc.URI))
+	// remove URI after use (as it may include passwords)
+	mc.URI = "REDACTED"
 	if err != nil {
 		return nil, fmt.Errorf("failed to create mongo client: %s", err)
 	}
 
 	err = client.Ping(ctx, readpref.Primary())
 	if err != nil {
-		return nil, fmt.Errorf("failed to ping mongo db '%s': %s", mc.URI, err)
+		return nil, fmt.Errorf("failed to ping mongo db '%s': %s", mc.Server, err)
 	}
 
 	return client, nil
