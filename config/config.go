@@ -13,7 +13,10 @@ const (
 
 // Config describes the api configuration
 type Config struct {
-	StorageKind string `default:"MemStore"`
+	Port           int      `default:"8080"`
+	StorageKind    string   `default:"MemStore"`
+	AllowedOrigins []string `default:"*"`
+	AllowedHeaders []string `default:"Content-Type"`
 }
 
 func (c *Config) String() string {
