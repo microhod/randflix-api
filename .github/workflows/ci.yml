@@ -25,7 +25,7 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Build
-      run: go build -v
+      run: go build -v ./...
 
   test:
     name: Test
@@ -46,7 +46,7 @@ jobs:
         gofmt-flags: '-l -d'
 
     - name: Test
-      run: go test -v .
+      run: go test -v ./...
 
   docker:
     name: Docker

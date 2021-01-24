@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
@@ -15,36 +16,36 @@ func main() {
 
 	cfg, err := config.GetConfig()
 	if err != nil {
-		log.Fatalf("failed to get config: %s", err)
+		log.Fatalf("failed to get config: %s\n", err)
 	}
 
 	store, err := storage.CreateStorage(cfg)
 	if err != nil {
-		log.Fatalf("Failed to create storage: %s", err)
+		log.Fatalf("failed to create storage: %s\n", err)
 	}
+
+	api := api.API{Storage: store}
 	defer store.Disconnect()
 
-	a := api.API{Storage: store}
-
 	r := mux.NewRouter()
-	r.HandleFunc("/title/random", a.RandomTitleHandler).
+	r.HandleFunc("/title/random", api.RandomTitleHandler).
 		Methods(http.MethodGet).
 		Schemes("http")
-	r.HandleFunc("/title", a.TitleHandler).
+	r.HandleFunc("/title", api.TitleHandler).
 		Methods(http.MethodPost, http.MethodGet).
 		Schemes("http")
-	r.HandleFunc("/title/{id}", a.TitleHandler).
+	r.HandleFunc("/title/{id}", api.TitleHandler).
 		Methods(http.MethodGet, http.MethodPut).
 		Schemes("http")
 
-	c := cors.New(cors.Options{
-		AllowedOrigins: []string{"*"},
-		AllowedHeaders: []string{"Content-Type"},
-		AllowedMethods: []string{http.MethodGet, http.MethodOptions},
+	cors := cors.New(cors.Options{
+		AllowedOrigins: cfg.CorsAllowedOrigins,
+		AllowedHeaders: cfg.CorsAllowedHeaders,
+		AllowedMethods: cfg.CorsAllowedMethods,
 	})
 
-	handler := c.Handler(r)
+	handler := cors.Handler(r)
 
-	log.Print("(http): starting http server...")
-	http.ListenAndServe("0.0.0.0:8080", handler)
+	log.Printf("(http): starting http server on port %d", cfg.Port)
+	http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", cfg.Port), handler)
 }

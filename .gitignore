@@ -1,5 +1,9 @@
 # output of go build
 randflix-api
+randflix-api.exe
+
+# vscode debug file
+__debug_bin
 
 # local .env file
 .env

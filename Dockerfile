@@ -13,6 +13,9 @@ FROM scratch AS final
 
 ARG BASE_PATH
 
+# Copy ca certs from build container
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+# Copy application
 COPY --from=build ${BASE_PATH}/randflix-api /randflix-api
 
 EXPOSE 8080
