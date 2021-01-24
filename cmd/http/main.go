@@ -22,8 +22,8 @@ func main() {
 	r = api.ConfigureTitleRoutes(r)
 
 	var handler http.Handler
-	handler = api.ConfigureRandomHandler(cfg, r)
 	handler = api.ConfigureTitleHandler(cfg, r)
+	handler = api.ConfigureRandomHandler(cfg, r)
 
 	log.Printf("(http): starting http server on port %d", cfg.Port)
 	http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", cfg.Port), handler)
