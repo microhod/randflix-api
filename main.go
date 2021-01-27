@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/microhod/randflix-api/api"
@@ -46,6 +48,14 @@ func main() {
 	})
 
 	handler := cors.Handler(r)
+
+	// handle case where azure functions needs to set the port
+	if port, ok := os.LookupEnv("FUNCTIONS_CUSTOMHANDLER_PORT"); ok {
+		cfg.Port, err = strconv.Atoi(port)
+		if err != nil {
+			log.Fatalf("failed to parse FUNCTIONS_CUSTOMHANDLER_PORT to int: %s", err)
+		}
+	}
 
 	log.Printf("(http): starting http server on port %d", cfg.Port)
 	http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", cfg.Port), handler)
