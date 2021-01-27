@@ -1,0 +1,60 @@
+name: CD
+
+# only run on main branch
+on:
+  push:
+    branches:
+      - main
+
+env:
+  DOCKER_REGISTRY: microhod/randflix-api
+  AZURE_FUNCTIONAPP_NAME: randflix
+  AZURE_FUNCTIONAPP_PATH: '.deployment/functions'
+
+jobs:
+
+  docker:
+    name: Docker
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Check out Code
+      uses: actions/checkout@v2
+
+    - name: Login to DockerHub
+      uses: docker/login-action@v1 
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+
+    - name: Build and Publish
+      uses: docker/build-push-action@v2.2.1
+      with:
+        tags: "${{ env.DOCKER_REGISTRY }}:latest"
+        push: true
+  
+  az-func:
+    name: Azure Function
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: ^1.15
+
+    - name: Check out Code
+      uses: actions/checkout@v2
+
+    - name: Build
+      run: GOOS=linux GOARCH=amd64 go build -o .deployment/functions/randflix-api
+
+    - name: 'Run Azure Functions Action'
+      uses: Azure/functions-action@v1
+      with:
+        app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
+        package: ${{ env.AZURE_FUNCTIONAPP_PATH }}
+        publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}

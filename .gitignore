@@ -5,6 +5,9 @@ randflix-api.exe
 # vscode debug file
 __debug_bin
 
+# azure functions local settings
+local.settings.json
+
 # local .env file
 .env
 
