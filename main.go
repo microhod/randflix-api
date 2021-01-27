@@ -18,6 +18,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to get config: %s\n", err)
 	}
+	log.Printf("config: %s\n", cfg)
 
 	store, err := storage.CreateStorage(cfg)
 	if err != nil {

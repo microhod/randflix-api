@@ -2,11 +2,13 @@ package storage
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"math"
 	"reflect"
+	"regexp"
 	"strings"
 	"time"
 
@@ -39,6 +41,18 @@ type mongoConfig struct {
 	Server           string
 }
 
+func (c *mongoConfig) String() string {
+	// get copy of instance so that we don't override the URI in the real config
+	conf := *c
+
+	// mask basic auth password (if exists)
+	basicAuthPattern := regexp.MustCompile(`(:\/\/[^\/]+:)[^\/]+(@)`)
+	conf.URI = basicAuthPattern.ReplaceAllString(conf.URI, `$1*****$2`)
+
+	s, _ := json.MarshalIndent(conf, "", "\t")
+	return string(s)
+}
+
 // NewMongoStore creates a new mongodb client, based on the config passed in
 func (c *Config) NewMongoStore() (Storage, error) {
 
@@ -49,6 +63,8 @@ func (c *Config) NewMongoStore() (Storage, error) {
 	}
 	mc := &mConfig
 	mc.parseServer()
+
+	log.Printf("mongo config: %s\n", mc.String())
 
 	client, err := mc.connect()
 	if err != nil {
