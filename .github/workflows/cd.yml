@@ -54,7 +54,7 @@ jobs:
     - name: Build
       run: GOOS=linux GOARCH=amd64 go build -o .deployment/functions/randflix-api
 
-    - name: 'Run Azure Functions Action'
+    - name: Deploy Azure Function
       uses: Azure/functions-action@v1
       with:
         app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
