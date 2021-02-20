@@ -76,7 +76,7 @@ func (a *API) listTitles(w http.ResponseWriter, req *http.Request) {
 
 	addDefaultResponseHeaders(w)
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, string(bytes))
+	fmt.Fprint(w, string(bytes))
 }
 
 func (a *API) getTitle(w http.ResponseWriter, req *http.Request) {
@@ -106,7 +106,7 @@ func (a *API) getTitle(w http.ResponseWriter, req *http.Request) {
 
 	addDefaultResponseHeaders(w)
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, string(bytes))
+	fmt.Fprint(w, string(bytes))
 }
 
 func (a *API) createTitle(w http.ResponseWriter, req *http.Request) {
@@ -145,7 +145,7 @@ func (a *API) createTitle(w http.ResponseWriter, req *http.Request) {
 
 	addDefaultResponseHeaders(w)
 	w.WriteHeader(http.StatusCreated)
-	fmt.Fprintf(w, string(bytes))
+	fmt.Fprint(w, string(bytes))
 }
 
 func (a *API) updateTitle(w http.ResponseWriter, req *http.Request) {
