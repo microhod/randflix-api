@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/microhod/randflix-api/model/title"
 )
@@ -76,7 +77,9 @@ func parseTitleQuery(query map[string][]string) (*titleQuery, error) {
 	}
 
 	// Genres
-	tq.genres, _ = query["genre"]
+	if len(query["genres"]) > 0 {
+		tq.genres = strings.Split(query["genres"][0], ",")
+	}
 
 	// Score
 	keys, ok = query["score_kind"]
