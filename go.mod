@@ -7,5 +7,5 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/rs/cors v1.7.0
-	go.mongodb.org/mongo-driver v1.4.5
+	go.mongodb.org/mongo-driver v1.5.1
 )
